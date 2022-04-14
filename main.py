@@ -67,6 +67,8 @@ def main():
     updater.start_polling()
     updater.idle()
 
+# welcome menu
+
 
 def welcome(update, context):
     welcome_message = '''hello, {}!Welcome to chatbot.
@@ -82,6 +84,8 @@ lease Select. Or you can send /cookshare to share cooking video to us! '''.forma
         user['username'], user['id']))
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=welcome_message, reply_markup=reply_keyboard_markup)
+
+# indentify the user selection
 
 
 def userselected(update, context):
@@ -132,6 +136,8 @@ def userselected(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=selected_message, reply_markup=reply_keyboard_markup)
 
+# cookshare command
+
 
 def cookshare(update, context):
     userid = update.message.from_user.id
@@ -139,12 +145,16 @@ def cookshare(update, context):
         chat_id=update.effective_chat.id, text="Great!Please input your sharing of this hiking route~~")
     return COOKARYVIDEO
 
+# hikeshare command
+
 
 def hikeshare(update, context):
     userid = update.message.from_user.id
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!Please input your sharing of this hiking route~~~")
     return HIKESHARING
+
+# share the cookary video
 
 
 def cookaryshare(update, context):
@@ -156,6 +166,8 @@ def cookaryshare(update, context):
     )
     return ConversationHandler.END
 
+# insert the hiking comment
+
 
 def insertcomment(update, context):
     global hikingid
@@ -166,6 +178,8 @@ def insertcomment(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!More appericate to share image of it. or you can send /skipshare if you don\'t want to share!")
     return PHOTO
+
+# insert the hiking photo and change it to blob to store in db
 
 
 def insertphoto(update, context):
@@ -184,6 +198,8 @@ def insertphoto(update, context):
         'Gorgeous! Now, you can send /viewhikeshare to watch other user sharing on this route.'
     )
     return ConversationHandler.END
+
+# cancel
 
 
 def cancel(update, context) -> int:
@@ -211,6 +227,8 @@ def skip_photo(update, context):
         'Now, you can send /viewhikeshare to watch other user sharing on this route.'
     )
     return ConversationHandler.END
+
+# view other user hiking sharing
 
 
 def viewhikeshare(update, context):
