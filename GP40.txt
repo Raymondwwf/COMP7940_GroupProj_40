@@ -1,0 +1,13 @@
+ec2-16-162-122-188.ap-east-1.compute.amazonaws.com
+16.162.122.188
+ap-east-1b
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFnti41Xl94IXEEDNjLG4BHPmjpUcz7zo5oMeKZsFH+PzleJerSQHoBAmZlFq+HDuwGwuklpto+BCTC7x09ikXCpOfR5lwB67LREHui/aXWYvbOkWS5YpG+aLAdjp3bdntjqgWqC/ca+iCNd3G0JFoKWZgnJSUcJ5EtajrK8aeWIDNEqF6Y7XSfLvFi3qyxTwXye72n3cE5F7b0AqRMGHorScc8Ruk/A5z6wJDN6e
+
+aws ecr get-login-password --region ap-east-1b | docker login --username AWS --password-stdin 167755316207.dkr.ecr.ap-east-1.amazonaws.com
+
+Secret access key 
+BF1xWK8kJknTWR9En5gNKKKzrv/N+ToWaS9Kf8gk
+
+Access key ID 
+AKIASODX67PXRN3G3BXH
