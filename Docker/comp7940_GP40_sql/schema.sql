@@ -22,6 +22,15 @@ CREATE TABLE `hikecomment` (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `movieshare`;
+CREATE TABLE `movieshare` (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `moviename` text NOT NULL,
+  `moviesharing` text NOT NULL,
+  `userid` int NOT NULL,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 INSERT INTO `hiking` (`id`, `District`,`Trails`, `Path`, `Desination_Transport`, `Leaving_Transport`, `RequireTime_Hours`) VALUES
 (1, "kw","獅子山", "在慈雲山北巴士總站後方的梯級開步，沿水泥路走經修建妥善的石級抵達沙田坳。在馬路轉角處見麥理浩徑的告示牌，循徑上行，攀升一段後路徑漸見平緩，及後遇上分支直走（左路可下走至沙田坳村）。
 在一山坳處，隨指示牌登上獅子山再往前走，輕攀大石可到達獅位置，頭眺望九龍半島。從獅子頭側的明顯小徑接回麥理浩徑，不久便到達回歸紀念亭。由此續走至畢架山發射站的馬路，沿徑續走至涼亭。及後離開麥理浩徑左走，在支路再左轉下走至龍翔道，最後橫越公路便可下走抵蘇屋村。", "小巴 37A", "巴士 2/112 號", 4),
