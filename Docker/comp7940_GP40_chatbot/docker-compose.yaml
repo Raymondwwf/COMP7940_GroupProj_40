@@ -1,12 +1,15 @@
-version: '3'
+version: "3"
 services:
   chatbot:
-    image: comp7940_GP40_chatbot
+    image: comp7940_gp40_chatbot
     depends_on:
       - mysql
     links:
       - mysql
   mysql:
-    image: comp7940_GP40_mysql
-    expose: 
-      - 3306
+    image: comp7940_group_mysql
+    # port mapping
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"

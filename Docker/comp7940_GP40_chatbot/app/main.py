@@ -4,14 +4,14 @@ from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, 
 # The messageHandler is used for all message updates
 import configparser
 import logging
-import omdb
 import pymysql
 import base64
 from PIL import Image
 import io
+import os
 
-
-conn = pymysql.connect(host="127.0.0.1", user="root", passwd="", db="project")
+conn = pymysql.connect(host=os.environ['MYSQL_HOST'], port=int(
+    os.environ['MYSQL_PORT']), user=os.environ['MYSQL_USER'], passwd=os.environ['MYSQL_PWD'], db=os.environ['MYSQL_DB'])
 cursor = conn.cursor()
 hikingid = None
 comment = None
@@ -24,7 +24,7 @@ def main():
     config = configparser.ConfigParser()
     config.read('config.ini')
     updater = Updater(
-        token=(config['TELEGRAM']['ACCESS_TOKEN']), use_context=True)
+        token=(os.environ['TELE_TOKEN']), use_context=True)
     dispatcher = updater.dispatcher
     # You can set this logging module, so you will know when and why things do not work as expected
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

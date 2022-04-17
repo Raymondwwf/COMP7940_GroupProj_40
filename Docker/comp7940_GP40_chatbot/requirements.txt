@@ -1,7 +1,0 @@
-PyMySQL==1.0.2
-python-telegram-bot==13.4.1
-omdb==0.10.1
-configparser==5.2.0
-logging==0.4.9.6
-unpaddedbase64==2.1.0
-image==1.5.33

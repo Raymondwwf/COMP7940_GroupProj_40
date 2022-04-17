@@ -1,0 +1,6 @@
+telegram
+python-telegram-bot>=13.1
+configparser
+redis
+PyMySQL>=1.0.2
+Pillow
