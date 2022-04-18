@@ -15,14 +15,15 @@ conn = pymysql.connect(host=os.environ['MYSQL_HOST'], port=int(
 cursor = conn.cursor()
 hikingid = None
 comment = None
+moviename = None
+moviecomment = None
 HIKESHARING, PHOTO = range(2)
 COOKARYVIDEO = range(1)
+MOVIENAME, MOVIEREVIEW = range(2)
 
 
 def main():
     # Load your token and create an Updater for your Bot
-    config = configparser.ConfigParser()
-    config.read('config.ini')
     updater = Updater(
         token=(os.environ['TELE_TOKEN']), use_context=True)
     dispatcher = updater.dispatcher
@@ -56,12 +57,30 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)],
     )
 
+    movieconv_handler = ConversationHandler(
+        entry_points=[CommandHandler(
+            "sharemovie", sharemovie)],
+        states={
+            MOVIENAME: [
+                MessageHandler(Filters.text & (
+                    ~Filters.command), sharemoviename)
+            ],
+            MOVIEREVIEW: [
+                MessageHandler(Filters.text & (
+                    ~Filters.command), sharemoviereview)
+            ],
+
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
+
     # register a dispatcher to handle message: here we register an echo dispatcher
     dispatcher.add_handler(CommandHandler("start", welcome))
     dispatcher.add_handler(CommandHandler("viewhikeshare", viewhikeshare))
     updater.dispatcher.add_handler(CallbackQueryHandler(userselected))
     dispatcher.add_handler(hikeconv_handler)
     dispatcher.add_handler(cookconv_handler)
+    dispatcher.add_handler(movieconv_handler)
 
     # To start the bot:
     updater.start_polling()
@@ -73,10 +92,10 @@ def main():
 def welcome(update, context):
     welcome_message = '''hello, {}!Welcome to chatbot.
 We have provided two features for you
-lease Select. Or you can send /cookshare to share cooking video to us! '''.format(
+lease Select. Or you can send /cookshare to share cooking video to us!
+Or you can send /sharemovie to share cooking video to us! '''.format(
         update.message.from_user.first_name)
     reply_keyboard_markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="TV show review", callback_data="1")],
         [InlineKeyboardButton(text="Hiking", callback_data="2")]
     ])
     user = update.message.from_user
@@ -94,14 +113,6 @@ def userselected(update, context):
     update.callback_query.answer()
     selected_message = ''
     reply_keyboard_markup = []
-    if callback_data == "1":
-        selected_message = 'Thanks for selecting TV show review! Do you want to Reading/writing a review?'
-        reply_keyboard_markup = InlineKeyboardMarkup([
-            [InlineKeyboardButton(
-                text="Reading a reviews.", callback_data="readmovieshare")],
-            [InlineKeyboardButton(
-                text="writing a reviews to share.", callback_data="movieshare")]
-        ])
     if callback_data == "2":
         selected_message = 'Select the district. The system will recommend a route to you randomly.'
         reply_keyboard_markup = InlineKeyboardMarkup([
@@ -125,8 +136,7 @@ def userselected(update, context):
             trails = result[1]
             reqtime = result[3]
             path = result[2]
-        selected_message = "名稱:"+trails+"\n路線:" + \
-            path+",\n需時:" + \
+        selected_message = "名稱:"+trails+"\n路線:" + path+",\n需時:" + \
             str(reqtime)+"小時\n You can use /hikeshare command to share the feeling of this route!"
         reply_keyboard_markup = InlineKeyboardMarkup([
             [InlineKeyboardButton(
@@ -141,8 +151,10 @@ def userselected(update, context):
 
 def cookshare(update, context):
     userid = update.message.from_user.id
+    logging.info("User %s selected /cookshare", (userid))
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!Please input your sharing of this hiking route~~")
+
     return COOKARYVIDEO
 
 # hikeshare command
@@ -150,9 +162,48 @@ def cookshare(update, context):
 
 def hikeshare(update, context):
     userid = update.message.from_user.id
+    logging.info("User %s selected /hikeshare", (userid))
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!Please input your sharing of this hiking route~~~")
     return HIKESHARING
+
+
+# sharemovie command
+
+
+def sharemovie(update, context):
+    userid = update.message.from_user.id
+    logging.info("User %s selected /sharemovie", (userid))
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Great!Please input the name of movie")
+    return MOVIENAME
+
+# sharemoviename
+
+
+def sharemoviename(update, context):
+    global moviename
+    moviename = update.message.text
+    userid = update.message.from_user.id
+    logging.info("User %s share movie name %s", (userid, moviename))
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Please input the review of movie")
+    return MOVIEREVIEW
+
+# sharemoviename
+
+
+def sharemoviereview(update, context):
+    global moviename, moviecomment
+    moviecomment = update.message.text
+    userid = update.message.from_user.id
+    logging.info("User %s share movie reivew %s", (userid, moviecomment))
+    cursor.execute(
+        "INSERT INTO movieshare (moviename,moviesharing,userid) VALUES (%s,%s,%s)", (moviename, moviecomment, userid))
+    conn.commit()
+    context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Thanks for your reivew sharing!!!")
+    return ConversationHandler.END
 
 # share the cookary video
 
@@ -188,7 +239,7 @@ def insertphoto(update, context):
     userid = update.message.from_user.id
     user = update.message.from_user
     photo_file = update.message.photo[-1].get_file()
-    file = open(photo_file.download('user_photo.jpg'), 'rb').read()
+    file = open(photo_file, 'rb').read()
     file = base64.b64encode(file)
     cursor.execute(
         "INSERT INTO hikecomment (hikingid,comment,photo,userid) VALUES (%s,%s,%s,%s)", (hikingid, comment, file, userid))
@@ -238,6 +289,11 @@ def viewhikeshare(update, context):
         "SELECT comment,photo FROM hikecomment WHERE hikingid=%s AND userid <>%s ORDER BY timestamp DESC limit 1", (hikingid, userid))
     sqlresult = cursor.fetchall()
     comment = ""
+    bio = BytesIO()
+    bio.name = 'image.jpeg'
+    image.save(bio, 'JPEG')
+    bio.seek(0)
+    bot.send_photo(chat_id, photo=bio)
     for result in sqlresult:
         comment = result[0]
     reply_message = "The comment of above hiking route from user:\n"+comment
