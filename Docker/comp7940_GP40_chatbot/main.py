@@ -77,6 +77,7 @@ def main():
     # register a dispatcher to handle message: here we register an echo dispatcher
     dispatcher.add_handler(CommandHandler("start", welcome))
     dispatcher.add_handler(CommandHandler("viewhikeshare", viewhikeshare))
+    dispatcher.add_handler(CommandHandler("seemoviecomment", seereivew))
     updater.dispatcher.add_handler(CallbackQueryHandler(userselected))
     dispatcher.add_handler(hikeconv_handler)
     dispatcher.add_handler(cookconv_handler)
@@ -90,10 +91,11 @@ def main():
 
 
 def welcome(update, context):
-    welcome_message = '''hello, {}!Welcome to chatbot.
-We have provided two features for you
-lease Select. Or you can send /cookshare to share cooking video to us!
-Or you can send /sharemovie to share cooking video to us! '''.format(
+    welcome_message = '''hello, {}! Welcome to chatbot.
+We have provided three features for you.
+You can send /cookshare to share cooking video to us!
+Or you can send /sharemovie to share cooking video to us!
+Or you can select hiking to exploer hiking route from us! '''.format(
         update.message.from_user.first_name)
     reply_keyboard_markup = InlineKeyboardMarkup([
         [InlineKeyboardButton(text="Hiking", callback_data="2")]
@@ -129,15 +131,15 @@ def userselected(update, context):
         print("writing")
     if callback_data == "kw" or callback_data == "hk" or callback_data == "nt":
         cursor.execute(
-            "SELECT id,Trails,Path,RequireTime_Hours FROM hiking WHERE District=%s", [callback_data])
+            "SELECT id,Trails,Path,RequireTime_Hours FROM hiking WHERE District=%s order by RAND() LIMIT 1", [callback_data])
         sqlresult = cursor.fetchall()
         for result in sqlresult:
             hikingid = result[0]
             trails = result[1]
             reqtime = result[3]
             path = result[2]
-        selected_message = "名稱:"+trails+"\n路線:" + path+",\n需時:" + \
-            str(reqtime)+"小時\n You can use /hikeshare command to share the feeling of this route!"
+        selected_message = "Name:"+trails+"\nRoute:" + path+",\nTake Times:" + \
+            str(reqtime)+"Hours\n You can use /hikeshare command to share the feeling of this route!"
         reply_keyboard_markup = InlineKeyboardMarkup([
             [InlineKeyboardButton(
                 text="Back to previous menu", callback_data="2")]
@@ -153,7 +155,7 @@ def cookshare(update, context):
     userid = update.message.from_user.id
     logging.info("User %s selected /cookshare", (userid))
     context.bot.send_message(
-        chat_id=update.effective_chat.id, text="Great!Please input your sharing of this hiking route~~")
+        chat_id=update.effective_chat.id, text="Nice! Please share the cooking video to us!!!! ")
 
     return COOKARYVIDEO
 
@@ -205,6 +207,31 @@ def sharemoviereview(update, context):
         chat_id=update.effective_chat.id, text="Thanks for your reivew sharing!!!")
     return ConversationHandler.END
 
+# watch other user review
+
+
+def seereivew(update, context):
+    userid = update.message.from_user.id
+    user = update.message.from_user
+    try:
+        cursor.execute(
+            "SELECT moviename,moviesharing FROM movieshare WHERE userid<>%s order by RAND() LIMIT 1", (userid))
+        sqlresult = cursor.fetchall()
+        for result in sqlresult:
+            moviename = result[0]
+            moviesharing = result[1]
+        conn.commit()
+        conn.close()
+        logging.info("User %s select to see review", user.first_name)
+        reply_message = "Movie Name:"+moviename+"\nComment:" + moviesharing
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text=reply_message)
+    except pymysql.Error as e:
+        print("could not close connection error pymysql %d: %s" %
+              (e.args[0], e.args[1]))
+    return ConversationHandler.END
+
+
 # share the cookary video
 
 
@@ -213,7 +240,7 @@ def cookaryshare(update, context):
     user = update.message.from_user
     logging.info("User %s shared cookary video to us", user.first_name)
     update.message.reply_text(
-        'Thanks for sharing!'
+        'Thanks for sharing! Your cooking skill seems great!!!'
     )
     return ConversationHandler.END
 
@@ -234,20 +261,27 @@ def insertcomment(update, context):
 
 
 def insertphoto(update, context):
-    global comment
+    global comment, hikingid
     """Stores the photo and asks for a location."""
     userid = update.message.from_user.id
     user = update.message.from_user
     photo_file = update.message.photo[-1].get_file()
-    file = open(photo_file, 'rb').read()
-    file = base64.b64encode(file)
-    cursor.execute(
-        "INSERT INTO hikecomment (hikingid,comment,photo,userid) VALUES (%s,%s,%s,%s)", (hikingid, comment, file, userid))
-    conn.commit()
-    logging.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
-    update.message.reply_text(
-        'Gorgeous! Now, you can send /viewhikeshare to watch other user sharing on this route.'
-    )
+    file = photo_file.file_path
+    #file = base64.b64encode(file)
+    try:
+        cursor.execute(
+            "INSERT INTO hikecomment (hikingid,comment,photo,userid) VALUES (%s,%s,%s,%s)", (hikingid, comment, file, userid))
+        conn.commit()
+        logging.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
+        update.message.reply_text(
+            'Gorgeous! Now, you can send /viewhikeshare to watch other user sharing on this route.'
+        )
+    except pymysql.Error as e:
+        print("could not close connection error pymysql %d: %s" %
+              (e.args[0], e.args[1]))
+        update.message.reply_text(
+            'Please select the hiking distric first.'
+        )
     return ConversationHandler.END
 
 # cancel
@@ -265,18 +299,22 @@ def cancel(update, context) -> int:
 
 def skip_photo(update, context):
     """Skips the photo and asks for a location."""
-    global hikingid
-    global comment
+    global hikingid, comment
     comment = update.message.text
     userid = update.message.from_user.id
-    cursor.execute(
-        "INSERT INTO hikecomment (hikingid, comment,userid) VALUES (%s,%s,%s)", (hikingid, comment, userid))
-    conn.commit()
-    user = update.message.from_user
-    logger.info("User %s did not send a photo.", user.first_name)
-    update.message.reply_text(
-        'Now, you can send /viewhikeshare to watch other user sharing on this route.'
-    )
+    try:
+        cursor.execute(
+            "INSERT INTO hikecomment (hikingid, comment,userid) VALUES (%s,%s,%s)", (hikingid, comment, userid))
+        conn.commit()
+        conn.close()
+        user = update.message.from_user
+        logger.info("User %s did not send a photo.", user.first_name)
+        update.message.reply_text(
+            'Now, you can send /viewhikeshare to watch other user sharing on this route.'
+        )
+    except pymysql.Error as e:
+        print("could not close connection error pymysql %d: %s" %
+              (e.args[0], e.args[1]))
     return ConversationHandler.END
 
 # view other user hiking sharing
@@ -286,20 +324,19 @@ def viewhikeshare(update, context):
     global hikingid
     userid = update.message.from_user.id
     cursor.execute(
-        "SELECT comment,photo FROM hikecomment WHERE hikingid=%s AND userid <>%s ORDER BY timestamp DESC limit 1", (hikingid, userid))
+        "SELECT comment,photo FROM hikecomment WHERE hikingid=%s AND userid <>%s ORDER BY timestamp,RAND() DESC limit 1", (hikingid, userid))
     sqlresult = cursor.fetchall()
     comment = ""
-    bio = BytesIO()
-    bio.name = 'image.jpeg'
-    image.save(bio, 'JPEG')
-    bio.seek(0)
-    bot.send_photo(chat_id, photo=bio)
     for result in sqlresult:
         comment = result[0]
-    reply_message = "The comment of above hiking route from user:\n"+comment
-    print(reply_message)
-    context.bot.send_message(
-        chat_id=update.effective_chat.id, text=reply_message)
+        photo_path = result[1]
+        reply_message = "The comment of hiking route from user:\n"+comment
+        print(reply_message)
+        context.bot.send_message(
+            chat_id=update.effective_chat.id, text=reply_message)
+        if photo_path is not None:
+            context.bot.send_photo(
+                chat_id=update.effective_chat.id, photo=photo_path)
 
 
 if __name__ == '__main__':
