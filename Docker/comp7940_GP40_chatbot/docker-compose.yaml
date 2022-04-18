@@ -6,6 +6,8 @@ services:
       - mysql
     links:
       - mysql
+    ports:
+      - "5000:5000"
   mysql:
     image: comp7940sql
     # port mapping
