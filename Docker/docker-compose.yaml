@@ -1,0 +1,18 @@
+version: "3"
+services:
+  mysql:
+    build: ./comp7940_GP40_sql
+    # port mapping
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+  chatbot:
+    build: ./comp7940_GP40_chatbot
+    depends_on:
+      - mysql
+    links:
+      - mysql
+    ports:
+      - "5000:5000"
+    restart: on-failure

@@ -37,7 +37,7 @@ def main():
         states={
             HIKESHARING: [
                 MessageHandler(Filters.text & (~Filters.command), insertcomment), CommandHandler(
-                    'skipshare', skipsahrephoto),
+                    'skipshare', skipsharephoto)
             ],
             PHOTO: [
                 MessageHandler(Filters.photo, insertphoto), CommandHandler(
@@ -79,6 +79,7 @@ def main():
     dispatcher.add_handler(CommandHandler("start", welcome))
     dispatcher.add_handler(CommandHandler("viewhikeshare", viewhikeshare))
     dispatcher.add_handler(CommandHandler("seemoviecomment", seereivew))
+    dispatcher.add_handler(CommandHandler("skipshare", skipsharephoto))
     updater.dispatcher.add_handler(CallbackQueryHandler(userselected))
     dispatcher.add_handler(hikeconv_handler)
     dispatcher.add_handler(cookconv_handler)
