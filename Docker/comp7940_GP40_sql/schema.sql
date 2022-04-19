@@ -18,7 +18,7 @@ CREATE TABLE `hikecomment` (
   `hikingid` int(11) NOT NULL,
   `comment` text NOT NULL,
   `userid` int NOT NULL,
-  `photo` text NOT NULL,
+  `photo` text NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
