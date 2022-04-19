@@ -9,6 +9,7 @@ import base64
 from PIL import Image
 import io
 import os
+import requests
 
 conn = pymysql.connect(host=os.environ['MYSQL_HOST'], port=int(
     os.environ['MYSQL_PORT']), user=os.environ['MYSQL_USER'], passwd=os.environ['MYSQL_PWD'], db=os.environ['MYSQL_DB'])
@@ -36,14 +37,14 @@ def main():
         states={
             HIKESHARING: [
                 MessageHandler(Filters.text & (~Filters.command), insertcomment), CommandHandler(
-                    'skipsharing', skip_photo),
+                    'skipshare', skipsahrephoto),
             ],
             PHOTO: [
                 MessageHandler(Filters.photo, insertphoto), CommandHandler(
                     'viewhikeshare', viewhikeshare)
             ],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[CommandHandler('end', cancel)],
     )
 
     cookconv_handler = ConversationHandler(
@@ -54,7 +55,7 @@ def main():
                 MessageHandler(Filters.video, cookaryshare)
             ],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[CommandHandler('end', cancel)],
     )
 
     movieconv_handler = ConversationHandler(
@@ -71,7 +72,7 @@ def main():
             ],
 
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[CommandHandler('end', cancel)],
     )
 
     # register a dispatcher to handle message: here we register an echo dispatcher
@@ -153,7 +154,7 @@ def userselected(update, context):
 
 def cookshare(update, context):
     userid = update.message.from_user.id
-    logging.info("User %s selected /cookshare", (userid))
+    logging.info("User %s selected /cookshare", userid)
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Nice! Please share the cooking video to us!!!! ")
 
@@ -164,7 +165,7 @@ def cookshare(update, context):
 
 def hikeshare(update, context):
     userid = update.message.from_user.id
-    logging.info("User %s selected /hikeshare", (userid))
+    logging.info("User %s selected /hikeshare", userid)
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!Please input your sharing of this hiking route~~~")
     return HIKESHARING
@@ -175,7 +176,7 @@ def hikeshare(update, context):
 
 def sharemovie(update, context):
     userid = update.message.from_user.id
-    logging.info("User %s selected /sharemovie", (userid))
+    logging.info("User %s selected /sharemovie", userid)
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!Please input the name of movie")
     return MOVIENAME
@@ -187,7 +188,7 @@ def sharemoviename(update, context):
     global moviename
     moviename = update.message.text
     userid = update.message.from_user.id
-    logging.info("User %s share movie name %s", (userid, moviename))
+    logging.info("User %s share movie name %s", userid, moviename)
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Please input the review of movie")
     return MOVIEREVIEW
@@ -199,7 +200,7 @@ def sharemoviereview(update, context):
     global moviename, moviecomment
     moviecomment = update.message.text
     userid = update.message.from_user.id
-    logging.info("User %s share movie reivew %s", (userid, moviecomment))
+    logging.info("User %s share movie reivew %s", userid, moviecomment)
     cursor.execute(
         "INSERT INTO movieshare (moviename,moviesharing,userid) VALUES (%s,%s,%s)", (moviename, moviecomment, userid))
     conn.commit()
@@ -252,7 +253,7 @@ def insertcomment(update, context):
     global comment
     comment = update.message.text
     userid = update.message.from_user.id
-    logging.info("User %s inserted comment:%s", (userid, comment))
+    logging.info("User %s inserted comment: %s ", userid, comment)
     context.bot.send_message(
         chat_id=update.effective_chat.id, text="Great!More appericate to share image of it. or you can send /skipshare if you don\'t want to share!")
     return PHOTO
@@ -266,11 +267,11 @@ def insertphoto(update, context):
     userid = update.message.from_user.id
     user = update.message.from_user
     photo_file = update.message.photo[-1].get_file()
-    file = photo_file.file_path
+    path = photo_file.file_path
     #file = base64.b64encode(file)
     try:
         cursor.execute(
-            "INSERT INTO hikecomment (hikingid,comment,photo,userid) VALUES (%s,%s,%s,%s)", (hikingid, comment, file, userid))
+            "INSERT INTO hikecomment (hikingid,comment,photo,userid) VALUES (%s,%s,%s,%s)", (hikingid, comment, path, userid))
         conn.commit()
         logging.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
         update.message.reply_text(
@@ -292,19 +293,19 @@ def cancel(update, context) -> int:
     user = update.message.from_user
     logging.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
-        'Bye! Have a nice day.', reply_markup=ReplyKeyboardRemove()
+        'Bye! Have a nice day.'
     )
     return ConversationHandler.END
 
 
-def skip_photo(update, context):
-    """Skips the photo and asks for a location."""
+def skipsharephoto(update, context):
+    print("TEST")
     global hikingid, comment
     comment = update.message.text
     userid = update.message.from_user.id
     try:
         cursor.execute(
-            "INSERT INTO hikecomment (hikingid, comment,userid) VALUES (%s,%s,%s)", (hikingid, comment, userid))
+            "INSERT INTO hikecomment (hikingid, comment,photo,userid) VALUES (%s,%s,NULL,%s)", (hikingid, comment, userid))
         conn.commit()
         conn.close()
         user = update.message.from_user
@@ -331,12 +332,17 @@ def viewhikeshare(update, context):
         comment = result[0]
         photo_path = result[1]
         reply_message = "The comment of hiking route from user:\n"+comment
+        img_data = requests.get(photo_path).content
+        with open('shatrephoto.jpg', 'wb') as handler:
+            handler.write(img_data)
         print(reply_message)
         context.bot.send_message(
             chat_id=update.effective_chat.id, text=reply_message)
         if photo_path is not None:
             context.bot.send_photo(
-                chat_id=update.effective_chat.id, photo=photo_path)
+                chat_id=update.effective_chat.id, photo=open('shatrephoto.jpg', 'rb'))
+            if os.path.exists("shatrephoto.jpg"):
+                os.remove("shatrephoto.jpg")
 
 
 if __name__ == '__main__':
