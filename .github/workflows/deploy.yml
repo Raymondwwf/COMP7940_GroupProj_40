@@ -1,8 +1,7 @@
 name: Deploy EC2
 on: push
 jobs:
-  merge-PR:
-    if: github.event.pull_request.merged == true
+  Deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
