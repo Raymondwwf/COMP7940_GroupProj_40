@@ -1,8 +1,5 @@
 name: Deploy EC2
-on:
-  push:
-    branches:
-      - main
+on: push
 jobs:
   merge-PR:
     if: github.event.pull_request.merged == true
