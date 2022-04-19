@@ -1,7 +1,7 @@
 version: "3"
 services:
   chatbot:
-    image: comp7940chatbot1
+    image: comp7940chatbot
     depends_on:
       - mysql
     links:
@@ -9,7 +9,7 @@ services:
     ports:
       - "5000:5000"
   mysql:
-    image: comp7940sql1
+    image: comp7940sql
     # port mapping
     ports:
       - "3306:3306"
