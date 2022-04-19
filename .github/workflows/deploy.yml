@@ -2,9 +2,7 @@ name: Deploy EC2
 on:
   push:
     branches:
-      - develop
-  pull_request:
-    types: [closed]
+      - main
 jobs:
   merge-PR:
     if: github.event.pull_request.merged == true
