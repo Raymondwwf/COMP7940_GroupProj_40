@@ -132,21 +132,26 @@ def userselected(update, context):
     if callback_data == "movieshare":
         print("writing")
     if callback_data == "kw" or callback_data == "hk" or callback_data == "nt":
-        cursor.execute(
-            "SELECT id,Trails,Path,RequireTime_Hours FROM hiking WHERE District=%s order by RAND() LIMIT 1", [callback_data])
-        sqlresult = cursor.fetchall()
-        for result in sqlresult:
-            hikingid = result[0]
-            trails = result[1]
-            reqtime = result[3]
-            path = result[2]
-        selected_message = "Name:"+trails+"\nRoute:" + path+",\nTake Times:" + \
-            str(reqtime)+"Hours\n You can use /hikeshare command to share the feeling of this route!"
-        reply_keyboard_markup = InlineKeyboardMarkup([
-            [InlineKeyboardButton(
-                text="Back to previous menu", callback_data="2")]
-        ])
+        try:
+            cursor.execute(
+                "SELECT id,Trails,Path,RequireTime_Hours FROM hiking WHERE District=%s order by RAND() LIMIT 1", [callback_data])
+            sqlresult = cursor.fetchall()
+            conn.commit()
+            for result in sqlresult:
+                hikingid = result[0]
+                trails = result[1]
+                reqtime = result[3]
+                path = result[2]
 
+            selected_message = "Name:"+trails+"\nRoute:" + path+",\nTake Times:" + \
+                str(reqtime)+"Hours\n You can use /hikeshare command to share the feeling of this route!"
+            reply_keyboard_markup = InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="Back to previous menu", callback_data="2")]
+            ])
+        except pymysql.Error as e:
+            print("could not close connection error pymysql %d: %s" %
+                  (e.args[0], e.args[1]))
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=selected_message, reply_markup=reply_keyboard_markup)
 
@@ -219,11 +224,11 @@ def seereivew(update, context):
         cursor.execute(
             "SELECT moviename,moviesharing FROM movieshare WHERE userid<>%s order by RAND() LIMIT 1", (userid))
         sqlresult = cursor.fetchall()
+        conn.commit()
         for result in sqlresult:
             moviename = result[0]
             moviesharing = result[1]
-        conn.commit()
-        conn.close()
+
         logging.info("User %s select to see review", user.first_name)
         reply_message = "Movie Name:"+moviename+"\nComment:" + moviesharing
         context.bot.send_message(
@@ -308,9 +313,8 @@ def skipsharephoto(update, context):
         cursor.execute(
             "INSERT INTO hikecomment (hikingid, comment,photo,userid) VALUES (%s,%s,NULL,%s)", (hikingid, comment, userid))
         conn.commit()
-        conn.close()
         user = update.message.from_user
-        logger.info("User %s did not send a photo.", user.first_name)
+        logging.info("User %s did not send a photo.", user.first_name)
         update.message.reply_text(
             'Now, you can send /viewhikeshare to watch other user sharing on this route.'
         )
