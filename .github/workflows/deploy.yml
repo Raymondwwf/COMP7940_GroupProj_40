@@ -9,8 +9,8 @@ jobs:
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
-          key: ${{ secrets.AWS_SSH_KEY  }}
+          key: ${{ secrets.AWS_PRIVATE_KEY  }}
           name: "ec2-user"
-          known_hosts: "ec2-16-162-122-188.ap-east-1.compute.amazonaws.com"
+          known_hosts: ${{ secrets.USER_NAME  }}
       - name: rsync over ssh
         run: ./deploy_to_aws.sh
