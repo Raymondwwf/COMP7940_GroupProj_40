@@ -5,7 +5,7 @@ on:
 
 jobs:
   Deploy:
-    needs: build
+    name: cicd
     runs-on: ubuntu-latest
     
     steps:
